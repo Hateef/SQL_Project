@@ -1,0 +1,69 @@
+1- Provide a table with a lists of each movie, its film category, and the number of times it has been rented.
+(JOIN, aggregates, aliases, subquery, WHERE, GROUP BY, ORDER BY) 
+
+SELECT film_title, 
+              category_name, 
+              rental_count
+FROM
+(SELECT f.title film_title, c.name category_name, COUNT(rental_id) rental_count
+FROM film f
+JOIN film_category fc
+ON fc.film_id = f.film_id 
+JOIN category c
+ON fc.category_id = c.category_id
+JOIN inventory i
+ON f.film_id = i.film_id
+JOIN rental r 
+ON i.inventory_id = r.inventory_id
+WHERE c.name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+GROUP BY 1,2
+ORDER BY 2) sub
+
+
+2- provide a table with the movie titles and divide them into 4 levels (first_quarter, second_quarter,third_quarter, and final_quarter) based on the quartiles (25%, 50%, 75%) of the rental duration for movies across all categories.
+(JOIN, window function, subquery, WHERE, NTILE, IN) 
+
+SELECT title,
+              name,
+              rental_duration,
+              NTILE(4) OVER (ORDER BY rental_duration) AS standard_quartile
+FROM (SELECT f.title AS title, c.name AS name, f.rental_duration AS rental_duration
+FROM film_category fc
+JOIN film f
+ON fc.film_id = f.film_id 
+JOIN category c
+ON fc.category_id = c.category_id
+WHERE name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')
+ORDER BY 3) sub
+
+
+3- provide a table with the family-friendly film category, each of the quartiles, and the corresponding count of movies within each combination of film category for each corresponding rental duration category.
+(JOIN, aggregates, subquery, NTILE, GROUP BY, ORDER BY)
+
+SELECT name,
+              standard_quartile,
+              COUNT(rental_duration) As count
+FROM (SELECT c.name AS name, f.rental_duration AS rental_duration, NTILE(4) OVER (ORDER BY rental_duration) AS standard_quartile
+FROM film_category fc
+JOIN film f
+ON fc.film_id = f.film_id 
+JOIN category c
+ON fc.category_id = c.category_id
+WHERE name IN ('Animation', 'Children', 'Classics', 'Comedy', 'Family', 'Music')) sub
+GROUP BY 1,2
+ORDER BY 1,2,3
+
+
+4- Provide a table with a store ID for the store, the year and month and the number of rental orders each store has fulfilled for that month. 
+(JOIN, aggregates, GROUP BY, ORDER BY)
+
+SELECT DATE_PART('month' , r.rental_date) AS rental_month,
+DATE_PART('year' , r.rental_date) AS rental_year,
+s.store_id As store_id, COUNT(*) AS count_rentals
+FROM store s
+JOIN staff st
+ON s.store_id = st.store_id
+JOIN rental r
+ON r.staff_id = st.staff_id
+GROUP BY 1,2,3
+ORDER BY 4 DESC
